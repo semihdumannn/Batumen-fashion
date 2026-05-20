@@ -3,9 +3,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Container } from '@/components/layout/Container';
+import { AddBundleToCartButton } from '@/components/bundles/AddBundleToCartButton';
 import { api } from '@/lib/api';
 
-export const revalidate = Number(process.env.CACHE_TTL_PRODUCT ?? 300);
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
@@ -107,9 +108,7 @@ export default async function BundleDetailPage({
               </div>
             </div>
 
-            <button className="w-full bg-black text-white py-4 text-sm font-bold tracking-widest hover:bg-gray-800 transition-colors">
-              PAKETE EKLE
-            </button>
+            <AddBundleToCartButton products={bundle.products} />
           </div>
         </div>
       </Container>

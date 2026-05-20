@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Batumen Fashion ürün koleksiyonu.',
 };
 
-export const revalidate = Number(process.env.CACHE_TTL_LISTING ?? 180);
+export const revalidate = 180;
 
 interface SearchParams {
   search?: string;

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useToastStore } from '@/store/useToastStore';
 
 interface Props {
@@ -9,13 +10,18 @@ interface Props {
 
 export function ShareButtons({ title, url }: Props) {
   const toast = useToastStore();
-  const shareUrl = url ?? (typeof window !== 'undefined' ? window.location.href : '');
+  const [shareUrl, setShareUrl] = useState(url ?? '');
+
+  useEffect(() => {
+    if (!url) setShareUrl(window.location.href);
+  }, [url]);
+
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(title);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shareUrl || window.location.href);
       toast.success('Link kopyalandı!');
     } catch {
       toast.error('Link kopyalanamadı');

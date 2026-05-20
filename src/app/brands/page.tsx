@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: 'Batumen Fashion bünyesindeki markalar.',
 };
 
-export const revalidate = Number(process.env.CACHE_TTL_STATIC ?? 14400);
+export const revalidate = 14400;
 
 export default async function BrandsPage() {
   const brands = await getCachedBrands();

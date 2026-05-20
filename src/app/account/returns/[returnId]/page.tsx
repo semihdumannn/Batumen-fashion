@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { ReturnRequest } from '@/types';
 
@@ -22,18 +22,19 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ReturnDetailPage({
   params,
 }: {
-  params: { returnId: string };
+  params: Promise<{ returnId: string }>;
 }) {
+  const { returnId } = use(params);
   const [returnReq, setReturnReq] = useState<ReturnRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     api
-      .getReturn(Number(params.returnId))
+      .getReturn(Number(returnId))
       .then(setReturnReq)
       .catch(() => setReturnReq(null))
       .finally(() => setIsLoading(false));
-  }, [params.returnId]);
+  }, [returnId]);
 
   if (isLoading) {
     return (

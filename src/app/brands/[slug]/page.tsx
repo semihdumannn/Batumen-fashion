@@ -3,7 +3,7 @@ import { Container } from '@/components/layout/Container';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { getCachedProducts, getCachedBrands } from '@/lib/cache';
 
-export const revalidate = Number(process.env.CACHE_TTL_LISTING ?? 180);
+export const revalidate = 180;
 
 interface Props {
   params: Promise<{ slug: string }>;

@@ -21,16 +21,22 @@ function buildRemotePatterns() {
 }
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   allowedDevOrigins: ['batumen-fashion.test', '*.batumen-fashion.test'],
   images: {
     remotePatterns: buildRemotePatterns(),
   },
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? '';
+    // API_INTERNAL_URL: Docker/server-side (e.g. http://backend:8080)
+    // NEXT_PUBLIC_API_URL: fallback for local dev
+    const apiBase =
+      process.env.API_INTERNAL_URL ??
+      process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ??
+      '';
     return [
       {
         source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`,
+        destination: `${apiBase}/api/:path*`,
       },
     ];
   },

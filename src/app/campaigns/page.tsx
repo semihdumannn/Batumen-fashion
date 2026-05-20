@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Batumen Fashion aktif kampanyaları ve indirim fırsatları.',
 };
 
-export const revalidate = Number(process.env.CACHE_TTL_BLOG_LISTING ?? 600);
+export const revalidate = 600;
 
 export default async function CampaignsPage() {
   const campaigns = await getCachedCampaigns();

@@ -5,7 +5,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { FilterDrawer } from '@/components/products/FilterDrawer';
 import { getCachedProducts, getCachedBrands } from '@/lib/cache';
 
-export const revalidate = Number(process.env.CACHE_TTL_LISTING ?? 180);
+export const revalidate = 180;
 
 interface SearchParams {
   sort?: string;

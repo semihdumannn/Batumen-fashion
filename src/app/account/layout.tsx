@@ -26,8 +26,10 @@ export default function AccountRootLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <Container className="py-8">
-      <AccountLayout>{children}</AccountLayout>
-    </Container>
+    <div className="bg-gray-100 min-h-screen">
+      <Container className="py-8">
+        <AccountLayout>{children}</AccountLayout>
+      </Container>
+    </div>
   );
 }

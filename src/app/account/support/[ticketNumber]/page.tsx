@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import useSWR from 'swr';
 import { api } from '@/lib/api';
 import { useToastStore } from '@/store/useToastStore';
@@ -22,15 +22,16 @@ const STATUS_LABELS: Record<string, string> = {
 export default function TicketDetailPage({
   params,
 }: {
-  params: { ticketNumber: string };
+  params: Promise<{ ticketNumber: string }>;
 }) {
+  const { ticketNumber } = use(params);
   const toast = useToastStore();
   const [replyBody, setReplyBody] = useState('');
   const [isReplying, setIsReplying] = useState(false);
 
   const { data: ticket, mutate, isLoading } = useSWR<Ticket>(
-    `ticket:${params.ticketNumber}`,
-    () => api.getTicket(params.ticketNumber),
+    `ticket:${ticketNumber}`,
+    () => api.getTicket(ticketNumber),
     { revalidateOnFocus: false }
   );
 
@@ -39,7 +40,7 @@ export default function TicketDetailPage({
     if (!replyBody.trim()) return;
     setIsReplying(true);
     try {
-      await api.replyToTicket(params.ticketNumber, replyBody.trim());
+      await api.replyToTicket(ticketNumber, replyBody.trim());
       setReplyBody('');
       toast.success('Yanıtınız gönderildi');
       mutate();
@@ -53,7 +54,7 @@ export default function TicketDetailPage({
   const handleClose = async () => {
     if (!confirm('Bu talebi kapatmak istediğinizden emin misiniz?')) return;
     try {
-      await api.closeTicket(params.ticketNumber);
+      await api.closeTicket(ticketNumber);
       toast.success('Talep kapatıldı');
       mutate();
     } catch {

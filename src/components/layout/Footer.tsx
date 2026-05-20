@@ -7,7 +7,7 @@ import { useSiteSettings } from './SiteSettingsProvider';
 
 const footerLinks = {
   'Hakkımızda': [
-    { label: 'Biz Kimiz', href: '/about' },
+    { label: 'Biz Kimiz', href: '/hakkimizda' },
     { label: 'Blog', href: '/blog' },
     { label: 'Markalar', href: '/brands' },
     { label: 'Paketler', href: '/bundles' },
@@ -16,12 +16,14 @@ const footerLinks = {
   'Müşteri Hizmetleri': [
     { label: 'İletişim', href: '/contact' },
     { label: 'SSS', href: '/faq' },
-    { label: 'İade & Değişim', href: '/returns-policy' },
+    { label: 'İade & Değişim', href: '/iade-degisim-politikasi' },
+    { label: 'Kargo & Teslimat', href: '/kargo-teslimat' },
   ],
   'Yasal': [
-    { label: 'Gizlilik Politikası', href: '/privacy' },
-    { label: 'Kullanım Koşulları', href: '/terms' },
-    { label: 'Çerez Politikası', href: '/cookies' },
+    { label: 'Gizlilik Politikası', href: '/gizlilik-politikasi' },
+    { label: 'Kullanım Koşulları', href: '/kullanim-kosullari' },
+    { label: 'Mesafeli Satış Sözleşmesi', href: '/mesafeli-satis-sozlesmesi' },
+    { label: 'KVKK', href: '/kvkk' },
   ],
 };
 

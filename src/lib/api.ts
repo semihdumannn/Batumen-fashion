@@ -56,6 +56,17 @@ class ApiClient {
       const token = Cookies.get('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      } else if (typeof window !== 'undefined') {
+        // Guest session — persistent ID stored in localStorage
+        let guestId = localStorage.getItem('guest_session_id');
+        if (!guestId) {
+          // crypto.randomUUID() requires secure context (HTTPS); use fallback for HTTP dev
+          guestId = typeof crypto?.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+          localStorage.setItem('guest_session_id', guestId);
+        }
+        config.headers['X-Session-ID'] = guestId;
       }
       return config;
     });
@@ -296,12 +307,24 @@ class ApiClient {
 
   async getShippingMethods(): Promise<ShippingMethod[]> {
     const { data } = await this.client.get('/shipping-methods');
-    return data.data;
+    return this.normalizeShippingMethods(data.data);
   }
 
   async calculateShipping(cartTotal: number): Promise<ShippingMethod[]> {
     const { data } = await this.client.get('/shipping-methods/calculate', { params: { cart_total: cartTotal } });
-    return data.data;
+    return this.normalizeShippingMethods(data.data);
+  }
+
+  private normalizeShippingMethods(raw: Record<string, unknown>[]): ShippingMethod[] {
+    return (raw ?? []).map((m) => ({
+      id:               m.id as number,
+      name:             m.name as string,
+      code:             (m.code ?? m.carrier_code ?? '') as string,
+      // calculated_cost is the price the customer pays (0 = free), fall back to base_cost
+      price:            ((m.calculated_cost ?? m.price ?? m.base_cost ?? 0) as number),
+      estimated_days:   String(m.estimated_days ?? m.estimated_delivery_days ?? ''),
+      is_free_threshold:(m.is_free_threshold ?? m.free_shipping_threshold) as number | undefined,
+    }));
   }
 
   // ─── Campaigns & Banners ─────────────────────────────────────────────────
@@ -415,8 +438,22 @@ class ApiClient {
     shipping_method_id?: number;
     customer_note?: string;
     coupon_code?: string;
-  }): Promise<Order> {
+  }): Promise<{ order_number: string; total: number }> {
     const { data } = await this.client.post('/orders', orderData);
+    return data.data;
+  }
+
+  async createGuestOrder(orderData: {
+    guest_name: string;
+    guest_email: string;
+    guest_phone: string;
+    shipping_address: Omit<Address, 'id'>;
+    billing_address: Omit<Address, 'id'>;
+    shipping_method_id?: number;
+    customer_note?: string;
+    coupon_code?: string;
+  }): Promise<{ order_number: string; total: number }> {
+    const { data } = await this.client.post('/orders/guest', orderData);
     return data.data;
   }
 
@@ -631,13 +668,18 @@ class ApiClient {
   // ─── Payment ─────────────────────────────────────────────────────────────
 
   async initializePayment(payload: {
-    order_id: number;
-    payment_method: 'credit_card' | 'bank_transfer';
-    card?: Record<string, unknown>;
-    installments?: number;
+    order_number: string;
+    buyer: { name: string; surname: string; phone: string; email: string; tc_no?: string };
+    guest_email?: string;
   }): Promise<PaymentInitResponse> {
-    const { data } = await this.client.post('/payments/initialize', payload);
-    return data.data;
+    const isGuest = !!payload.guest_email;
+    const endpoint = isGuest ? '/payments/guest/initialize' : '/payments/initialize';
+    const { data } = await this.client.post(endpoint, payload);
+    return {
+      checkout_form_content: data.checkout_form_content,
+      order_number: payload.order_number,
+      payment_id: data.payment_id,
+    };
   }
 
   async getPaymentStatus(paymentId: number): Promise<PaymentVerifyResponse> {
@@ -675,6 +717,17 @@ class ApiClient {
   }
 
   // ─── Support Tickets ─────────────────────────────────────────────────────
+
+  async sendContactForm(payload: {
+    name: string;
+    email: string;
+    subject: string;
+    category: 'order' | 'product' | 'shipping' | 'payment' | 'return' | 'other';
+    message: string;
+  }): Promise<{ ticket_number: string }> {
+    const { data } = await this.client.post('/contact', payload);
+    return data.data;
+  }
 
   async getTickets(status?: string): Promise<PaginatedResponse<Ticket>> {
     const { data } = await this.client.get('/tickets', { params: status ? { status } : undefined });

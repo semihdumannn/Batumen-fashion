@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Batumen Fashion blog — moda trendleri, stil rehberleri ve koleksiyon hikayeleri.',
 };
 
-export const revalidate = Number(process.env.CACHE_TTL_BLOG_LISTING ?? 600);
+export const revalidate = 600;
 
 interface Props {
   searchParams: Promise<{ page?: string; tag?: string; category?: string }>;

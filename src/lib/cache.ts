@@ -248,7 +248,7 @@ export const getCachedSettings = withCache(
 
 export async function getCachedHeroBanners(): Promise<Banner[]> {
   try {
-    const res = await fetch(`${API}/banners?position=hero`, fetchOpts(TTL.HOMEPAGE, [TAGS.homepage]));
+    const res = await fetch(`${API}/banners?placement=home_hero`, fetchOpts(TTL.HOMEPAGE, [TAGS.homepage]));
     if (!res.ok) return [];
     const data = await res.json();
     return data.data ?? [];

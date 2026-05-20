@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TruckIcon, XCircleIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { TruckIcon, XCircleIcon, DocumentArrowDownIcon, ArrowPathIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { api } from '@/lib/api';
-import type { Order, ShipmentTracking } from '@/types';
+import { useCartStore } from '@/store/useCartStore';
+import { useToastStore } from '@/store/useToastStore';
+import { useUIStore } from '@/store/useUIStore';
+import type { Order } from '@/types';
 
 const statusLabels: Record<string, string> = {
   pending: 'Beklemede',
@@ -29,36 +32,42 @@ const CANCELLABLE_STATUSES = ['pending', 'processing'];
 
 const STATUS_STEPS = ['pending', 'processing', 'shipped', 'delivered'] as const;
 
+const CARGO_TRACKING_URLS: Record<string, string> = {
+  aras:     'https://kargotakip.araskargo.com.tr/MainPage.aspx?TrackingNo={no}',
+  mng:      'https://www.mngkargo.com.tr/go.aspx?ref={no}',
+  ptt:      'https://gonderitakip.ptt.gov.tr/Track?q={no}',
+  yurtici:  'https://www.yurticikargo.com/tr/online-islemler/gonderi-sorgula?code={no}',
+  surat:    'https://www.suratkargo.com.tr/KargoTakip/?TakipNo={no}',
+  ups:      'https://www.ups.com/track?tracknum={no}',
+  dhl:      'https://www.dhl.com/tr-tr/home/tracking.html?tracking-id={no}',
+};
+
+function getCargoTrackingUrl(carrier: string, trackingNumber: string): string | null {
+  const key = carrier.toLowerCase().replace(/\s+kargo$/i, '').replace(/\s/g, '');
+  const template = CARGO_TRACKING_URLS[key];
+  return template ? template.replace('{no}', encodeURIComponent(trackingNumber)) : null;
+}
+
 export default function OrderDetailPage({
   params,
 }: {
-  params: { orderNumber: string };
+  params: Promise<{ orderNumber: string }>;
 }) {
+  const { orderNumber } = use(params);
   const [order, setOrder] = useState<Order | null>(null);
-  const [tracking, setTracking] = useState<ShipmentTracking | null>(null);
-  const [showTracking, setShowTracking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [isReordering, setIsReordering] = useState(false);
+  const toast = useToastStore();
 
   useEffect(() => {
     api
-      .getOrder(params.orderNumber)
+      .getOrder(orderNumber)
       .then(setOrder)
       .catch(() => setOrder(null))
       .finally(() => setIsLoading(false));
-  }, [params.orderNumber]);
-
-  const loadTracking = async () => {
-    if (tracking) { setShowTracking(!showTracking); return; }
-    try {
-      const data = await api.getOrderTracking(params.orderNumber);
-      setTracking(data);
-      setShowTracking(true);
-    } catch {
-      // No tracking info yet
-    }
-  };
+  }, [orderNumber]);
 
   const handleCancel = async () => {
     if (!order || !confirm('Siparişinizi iptal etmek istediğinizden emin misiniz?')) return;
@@ -71,6 +80,31 @@ export default function OrderDetailPage({
       setCancelError('Sipariş iptal edilemedi. Lütfen müşteri hizmetleri ile iletişime geçin.');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleReorder = async () => {
+    if (!order) return;
+    setIsReordering(true);
+    let added = 0;
+    for (const item of order.items) {
+      try {
+        await useCartStore.getState().addItem(
+          item.product_id ?? 0,
+          item.quantity,
+          item.variant_id
+        );
+        added++;
+      } catch {
+        // silently skip failed items
+      }
+    }
+    setIsReordering(false);
+    if (added > 0) {
+      toast.success(`${added} ürün sepete eklendi`);
+      useUIStore.getState().openCart();
+    } else {
+      toast.error('Ürünler sepete eklenemedi');
     }
   };
 
@@ -99,6 +133,7 @@ export default function OrderDetailPage({
   const isCancellable = CANCELLABLE_STATUSES.includes(order.status);
   const isCancelled = order.status === 'cancelled' || order.status === 'refunded';
   const currentStepIndex = STATUS_STEPS.indexOf(order.status as typeof STATUS_STEPS[number]);
+  const isPaid = order.payment_status === 'paid';
 
   return (
     <div>
@@ -122,24 +157,47 @@ export default function OrderDetailPage({
           <span className={`text-xs px-3 py-1 font-medium ${statusColors[order.status] ?? 'bg-gray-100 text-gray-800'}`}>
             {statusLabels[order.status] ?? order.status}
           </span>
-          {order.status === 'shipped' && (
-            <button
-              onClick={loadTracking}
+          {(order.status === 'shipped' || order.status === 'delivered') && order.tracking_number && (
+            (() => {
+              const url = getCargoTrackingUrl(order.carrier_code ?? order.carrier_name ?? '', order.tracking_number);
+              return url ? (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-3 py-1 hover:border-black hover:text-black transition-colors"
+                >
+                  <TruckIcon className="w-3.5 h-3.5" />
+                  Kargo Takip
+                  <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+                </a>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-gray-500 border border-gray-100 px-3 py-1">
+                  <TruckIcon className="w-3.5 h-3.5" />
+                  {order.carrier_name ?? 'Kargo'}: {order.tracking_number}
+                </span>
+              );
+            })()
+          )}
+          {isPaid && (
+            <a
+              href={api.getOrderInvoiceUrl(order.order_number)}
+              target="_blank"
+              rel="noreferrer"
               className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-3 py-1 hover:border-black hover:text-black transition-colors"
             >
-              <TruckIcon className="w-3.5 h-3.5" />
-              Kargo Takip
-            </button>
+              <DocumentArrowDownIcon className="w-3.5 h-3.5" />
+              Fatura
+            </a>
           )}
-          <a
-            href={api.getOrderInvoiceUrl(order.order_number)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-3 py-1 hover:border-black hover:text-black transition-colors"
+          <button
+            onClick={handleReorder}
+            disabled={isReordering}
+            className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-3 py-1 hover:border-black hover:text-black transition-colors disabled:opacity-50"
           >
-            <DocumentArrowDownIcon className="w-3.5 h-3.5" />
-            Fatura
-          </a>
+            <ArrowPathIcon className="w-3.5 h-3.5" />
+            {isReordering ? 'Ekleniyor...' : 'Tekrar Sipariş Ver'}
+          </button>
           {isCancellable && (
             <button
               onClick={handleCancel}
@@ -159,29 +217,6 @@ export default function OrderDetailPage({
         </div>
       )}
 
-      {/* Shipment Tracking */}
-      {showTracking && tracking && (
-        <div className="mb-6 border border-gray-100 p-4">
-          <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">KARGO TAKİP</h3>
-          <p className="text-sm font-medium mb-1">{tracking.carrier} · {tracking.tracking_number}</p>
-          <p className="text-xs text-gray-500 mb-4">{tracking.status}</p>
-          {tracking.events.length > 0 && (
-            <div className="space-y-3">
-              {tracking.events.map((event, i) => (
-                <div key={i} className="flex gap-3 text-sm">
-                  <div className="shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-gray-400 mt-1.5" />
-                  </div>
-                  <div>
-                    <p className="text-gray-700">{event.description}</p>
-                    <p className="text-xs text-gray-400">{event.location} · {new Date(event.date).toLocaleString('tr-TR')}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Kargo Takip Adımları */}
       {!isCancelled && (

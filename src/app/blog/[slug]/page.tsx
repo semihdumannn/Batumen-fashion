@@ -7,7 +7,7 @@ import { BlogCard } from '@/components/blog/BlogCard';
 import { BlogComments } from '@/components/blog/BlogComments';
 import { getCachedBlogPost, getCachedBlogPosts } from '@/lib/cache';
 
-export const revalidate = Number(process.env.CACHE_TTL_BLOG_POST ?? 1800);
+export const revalidate = 1800;
 
 interface Props {
   params: Promise<{ slug: string }>;

@@ -109,11 +109,13 @@ export interface Address {
 
 export interface OrderItem {
   id: number;
+  product_id?: number;
   product_name: string;
   sku: string;
   quantity: number;
   unit_price: number;
   total_price: number;
+  variant_id?: number;
   variant_options?: Record<string, string>;
 }
 
@@ -121,12 +123,16 @@ export interface Order {
   id: number;
   order_number: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
   subtotal: number;
   shipping_cost: number;
   discount: number;
   total: number;
   items: OrderItem[];
   shipping_address?: Address;
+  tracking_number?: string | null;
+  carrier_code?: string | null;
+  carrier_name?: string | null;
   created_at: string;
   updated_at: string;
 }

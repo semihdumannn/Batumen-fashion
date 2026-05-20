@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: 'Modern erkek giyim ve aksesuar. Yeni sezon koleksiyonunu keşfet.',
 };
 
-export const revalidate = Number(process.env.CACHE_TTL_HOMEPAGE ?? 900);
+export const revalidate = 900;
 
 export default async function HomePage() {
   const [

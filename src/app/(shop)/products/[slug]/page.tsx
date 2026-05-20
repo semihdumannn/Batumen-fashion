@@ -14,7 +14,7 @@ import { ShareButtons } from '@/components/products/ShareButtons';
 import { ProductJsonLd } from '@/components/seo/ProductJsonLd';
 import { getCachedProduct, getCachedRelatedProducts } from '@/lib/cache';
 
-export const revalidate = Number(process.env.CACHE_TTL_PRODUCT ?? 300);
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
