@@ -43,7 +43,29 @@
       "Bash(xargs -I{} php -l {})",
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Skill(superpowers:systematic-debugging)",
-      "Bash(echo \"EXIT_CODE: $?\")"
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(npx next *)",
+      "Bash(NODE_OPTIONS='--max-old-space-size=4096' npx next build --debug)",
+      "Bash(grep -v \"^$\")",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Bash(NEXT_TELEMETRY_DISABLED=1 npx next build)",
+      "Bash(python3 *)",
+      "Bash(xargs cat)",
+      "Bash(git -C /Users/semihduman/Herd/batumen-fashion/backend log --oneline -5)",
+      "Bash(git -C /Users/semihduman/Herd/batumen-fashion/backend status)",
+      "Bash(tmutil listlocalsnapshotdates *)",
+      "Bash(composer require *)",
+      "Bash(railway --version)",
+      "Bash(vercel --version)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(railway service *)",
+      "Bash(railway status *)",
+      "Bash(vercel env *)",
+      "Bash(vercel *)",
+      "Bash(railway logs *)",
+      "Bash(railway deployment *)"
     ]
   }
 }
